@@ -8,6 +8,24 @@ char *init_field(char *field) {
     return field;
 }
 
+char *load_field(char *field, char *file_path) {
+    FILE *fp;
+    fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        printf("failed to open file %s\n", file_path);
+        return NULL;
+    }
+
+    char line[64];
+
+    for (int row = MAX_ROW - 1; row >= 0; row--) {
+        if (fgets(line, 64, fp) == NULL) break;
+        strncpy(&field[COORD(0, row)], line, MAX_COL);
+    }
+
+    return field;
+}
+
 void print_field(char *field) {
     for (int row = MAX_ROW - 1; row >= 0; row--) {
         for (int col = 0; col < MAX_COL; col++) {
@@ -50,4 +68,78 @@ int height(char *field, int col) {
     }
 
     return 0;
+}
+
+#define INIT_ARRAY(arr, value, length) { for (int i = 0; i < length; i++) arr[i] = value; }
+
+#define SAME_VALUE(col, row, index, field, group_field) (VALID_COL(col) && VALID_ROW(row) && group_field[COORD(col, row)] != group_field[index] && field[COORD(col, row)] == field[index])
+
+void group_field_values(int group_field[FIELD_SIZE], char field[FIELD_SIZE]) {
+    int remains = 0;
+    int buf1[FIELD_SIZE] = { -1 };
+    int buf2[FIELD_SIZE] = { -1 };
+    int *current;
+    int *next;
+    int next_count = 0;
+
+    INIT_ARRAY(group_field, -1, FIELD_SIZE);
+
+    group_field[0] = 1;
+    for (int i = 1; i < FIELD_SIZE; i++) {
+        group_field[i] = (field[i] == '_' ? 0 : -(i + 1));
+    }
+
+    buf1[0] = 0;
+    current = buf1;
+    next = buf2;
+    while (true) {
+        for (int i = 0; current[i] != -1; i++) {
+            int ref_index = current[i];
+            int col = COL(ref_index);
+            int row = ROW(ref_index);
+
+            if (SAME_VALUE(col, row + 1, ref_index, field, group_field)) {
+                int added_index = COORD(col, row + 1);
+                group_field[added_index] = group_field[ref_index];
+                next[next_count++] = added_index;
+            }
+
+            if (SAME_VALUE(col + 1, row, ref_index, field, group_field)) {
+                int added_index = COORD(col + 1, row);
+                group_field[added_index] = group_field[ref_index];
+                next[next_count++] = added_index;
+            }
+
+            if (SAME_VALUE(col, row - 1, ref_index, field, group_field)) {
+                int added_index = COORD(col, row - 1);
+                group_field[added_index] = group_field[ref_index];
+                next[next_count++] = added_index;
+            }
+
+            if (SAME_VALUE(col - 1, row, ref_index, field, group_field)) {
+                int added_index = COORD(col - 1, row);
+                group_field[added_index] = group_field[ref_index];
+                next[next_count++] = added_index;
+            }
+        }
+
+        if (next_count == 0) {
+            int i = 0;
+            for (; i < FIELD_SIZE; i++) {
+                if (group_field[i] < 0) {
+                    group_field[i] *= -1;
+                    next[next_count++] = i;
+                    break;
+                }
+            }
+            if (i == FIELD_SIZE) break;
+        }
+
+        int *tmp = current;
+        current = next;
+        next = tmp;
+
+        INIT_ARRAY(next, -1, FIELD_SIZE);
+        next_count = 0;
+    }
 }

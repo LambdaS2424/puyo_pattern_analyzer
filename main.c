@@ -4,7 +4,24 @@
 #include "puyo.h"
 
 int main(void) {
-    char field[MAX_ROW * MAX_COL + 1];
+    char field[FIELD_SIZE];
+    load_field(field, "resources/tsumo_fields/field001.shp");
+    print_field(field);
+    int group_field[FIELD_SIZE];
+    group_field_values(group_field, field);
+
+
+    for (int row = MAX_ROW - 1; row >= 0; row--) {
+        for (int col = 0; col < MAX_COL; col++) {
+            printf("% 3d", group_field[COORD(col, row)]);
+        }
+        putchar('\n');
+    }
+    return 0;
+}
+
+int _main(void) {
+    char field[FIELD_SIZE];
     init_field(field);
     print_field(field);
 
